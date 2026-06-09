@@ -10,7 +10,7 @@
 
 ---
 
-## Phase 1 — Foundation `weeks 1–2`
+## Phase 1 — Foundation 
 
 **Bitchiko**
 - Set up GitHub repo: folder structure, branch strategy
@@ -31,7 +31,7 @@
 
 ---
 
-## Phase 2 — Core recognition + auth `weeks 3–4`
+## Phase 2 — Core recognition + auth 
 
 **Bitchiko**
 - Build auth service: JWT validation, token expiry, rate limiting
@@ -52,7 +52,7 @@
 
 ---
 
-## Phase 3 — Enrollment + lights `weeks 5–6`
+## Phase 3 — Enrollment + lights 
 
 > Bitchiko migrates gateway from laptop to Raspberry Pi before this phase starts.
 
@@ -73,7 +73,7 @@
 
 ---
 
-## Phase 4 — Remote access + polish `weeks 7–8`
+## Phase 4 — Remote access + polish 
 
 **Bitchiko**
 - Set up WireGuard on the Pi, generate peer configs per phone
