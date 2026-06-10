@@ -77,6 +77,11 @@ client.on('message', (topic, message) => {
     return;
   }
 
+  if (typeof cmd !== 'object' || cmd === null || Array.isArray(cmd)) {
+    console.error(`[${id}] malformed command (expected JSON object, got ${cmd === null ? 'null' : typeof cmd})`);
+    return;
+  }
+
   const { action, payload } = cmd;
   console.log(`\n[${id}] ← cmd  action=${action}${payload ? '  payload=' + JSON.stringify(payload) : ''}`);
 
