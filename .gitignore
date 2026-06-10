@@ -58,6 +58,9 @@ dist/
 *.crt
 *.key
 *.csr
+mosquitto/certs/
+mosquitto/passwd
+mosquitto/mosquitto.conf
 mosquitto/data/
 mosquitto/log/
 

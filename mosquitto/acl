@@ -1,0 +1,23 @@
+# FaceConnect — MQTT ACL
+# Format:  user <username>
+#          topic <read|write|readwrite|deny> <topic>
+#
+# Topic convention:
+#   devices/<device-id>/cmd    — gateway sends commands to device
+#   devices/<device-id>/status — device reports state to gateway
+
+# Gateway service — full access to all device topics
+user gateway
+topic readwrite devices/#
+topic readwrite status/#
+
+# Phase 2: add per-device credentials below
+# Each device can only touch its own topics — limits blast radius if compromised.
+#
+# user lock-01
+# topic write devices/lock-01/cmd
+# topic read  devices/lock-01/status
+#
+# user lights-01
+# topic write devices/lights-01/cmd
+# topic read  devices/lights-01/status
