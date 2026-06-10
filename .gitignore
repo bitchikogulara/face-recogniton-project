@@ -1,0 +1,82 @@
+# Agent context — local only, never push
+AGENT_CONTEXT.md
+
+# ── Node.js / Gateway ──────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.env
+.env.local
+.env.*.local
+dist/
+build/
+*.tgz
+
+# ── Android / Mobile ──────────────────────────────────────────
+mobile/.gradle/
+mobile/local.properties
+mobile/*.iml
+mobile/.idea/
+mobile/captures/
+mobile/.externalNativeBuild/
+mobile/.cxx/
+mobile/app/build/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+mobile/keystore/
+*.jks
+*.keystore
+
+# ── ESP-IDF / Firmware ────────────────────────────────────────
+firmware/**/build/
+firmware/**/.pio/
+firmware/**/.pioenvs/
+firmware/**/.piolibdeps/
+sdkconfig.old
+*.bin
+*.elf
+*.map
+
+# ── Python (tooling/scripts) ──────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+*.egg
+
+# ── Mosquitto / Certs ─────────────────────────────────────────
+*.pem
+*.crt
+*.key
+*.csr
+mosquitto/data/
+mosquitto/log/
+
+# ── WireGuard ─────────────────────────────────────────────────
+*.conf
+wg-keys/
+
+# ── OS / Editor ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.swo
+*~
+.vscode/settings.json
+
+# ── Logs & temp ───────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+coverage/
+.nyc_output/
