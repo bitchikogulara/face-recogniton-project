@@ -15,9 +15,9 @@ topic readwrite status/#
 # Each device can only touch its own topics — limits blast radius if compromised.
 #
 # user lock-01
-# topic write devices/lock-01/cmd
-# topic read  devices/lock-01/status
+# topic read  devices/lock-01/cmd
+# topic write devices/lock-01/status
 #
 # user lights-01
-# topic write devices/lights-01/cmd
-# topic read  devices/lights-01/status
+# topic read  devices/lights-01/cmd
+# topic write devices/lights-01/status
