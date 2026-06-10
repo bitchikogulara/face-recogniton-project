@@ -5,7 +5,7 @@ const { verifyToken } = require('../middleware/auth');
 const router = Router();
 
 router.post('/', verifyToken, async (req, res) => {
-  const { device, action, payload } = req.body;
+  const { device, action, payload } = req.body ?? {};
 
   if (!device || !action) {
     return res.status(400).json({ error: 'device and action are required' });
