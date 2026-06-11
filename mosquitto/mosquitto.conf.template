@@ -1,0 +1,23 @@
+# FaceConnect — Mosquitto configuration
+# Generated from mosquitto.conf.template by setup.sh — do not edit directly.
+
+# No anonymous access, no plaintext listener
+allow_anonymous false
+
+# MQTTS on 8883 — TLS only
+listener 8883
+cafile {{CERTS_DIR}}/ca.crt
+certfile {{CERTS_DIR}}/server.crt
+keyfile {{CERTS_DIR}}/server.key
+require_certificate false
+tls_version tlsv1.2
+
+# Auth
+password_file {{CONF_DIR}}/passwd
+acl_file {{CONF_DIR}}/acl
+
+# Logging
+log_type error
+log_type warning
+log_type notice
+log_dest stdout
