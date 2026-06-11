@@ -1,0 +1,13 @@
+{
+  "name": "faceconnect-tools",
+  "version": "0.1.0",
+  "description": "Development tools for FaceConnect — simulators, provisioning scripts",
+  "private": true,
+  "scripts": {
+    "simulate": "node esp32-simulator.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "mqtt": "^5.0.0"
+  }
+}
