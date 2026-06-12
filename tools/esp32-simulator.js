@@ -3,6 +3,8 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const mqtt = require('mqtt');
 const fs = require('fs');
 
+const HEARTBEAT_INTERVAL_MS = 30 * 1000;
+
 const DEVICES = {
   'lock-01': {
     state: { locked: true },
@@ -52,23 +54,34 @@ function startDevice(id, device) {
     process.exit(1);
   }
 
+  const statusTopic = `devices/${id}/status`;
+  const cmdTopic    = `devices/${id}/cmd`;
+
   const client = mqtt.connect(url, {
     username: id,
     password,
     rejectUnauthorized: true,
     clientId: `esp32-sim-${id}-${Date.now()}`,
     ...(ca && { ca }),
+    // LWT: broker publishes this automatically if device disconnects unexpectedly
+    will: {
+      topic: statusTopic,
+      payload: JSON.stringify({ online: false }),
+      qos: 1,
+      retain: true,
+    },
   });
-
-  const cmdTopic    = `devices/${id}/cmd`;
-  const statusTopic = `devices/${id}/status`;
 
   client.on('connect', () => {
     console.log(`[${id}] connected`);
+
     client.subscribe(cmdTopic, { qos: 1 }, err => {
       if (err) { console.error(`[${id}] subscribe failed:`, err.message); return; }
       publishStatus(id, device, client, statusTopic);
     });
+
+    // Heartbeat — lets gateway know device is still alive without a command
+    setInterval(() => publishStatus(id, device, client, statusTopic), HEARTBEAT_INTERVAL_MS);
   });
 
   client.on('message', (_topic, message) => {
@@ -97,8 +110,9 @@ function startDevice(id, device) {
 }
 
 function publishStatus(id, device, client, statusTopic) {
-  const msg = JSON.stringify({ ...device.status(device.state), ts: Date.now() });
-  client.publish(statusTopic, msg, { qos: 1 });
+  const msg = JSON.stringify({ online: true, ...device.status(device.state), ts: Date.now() });
+  // retain:true so gateway gets current state immediately when it (re)connects
+  client.publish(statusTopic, msg, { qos: 1, retain: true });
   console.log(`[${id}] → status ${msg}`);
 }
 

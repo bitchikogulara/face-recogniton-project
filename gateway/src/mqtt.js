@@ -40,7 +40,15 @@ function connectMqtt() {
       const deviceId = match[1];
       try {
         const state = JSON.parse(message.toString());
-        statusCache.set(deviceId, { deviceId, ...state, updatedAt: Date.now() });
+        const existing = statusCache.get(deviceId) ?? {};
+        const now = Date.now();
+        statusCache.set(deviceId, {
+          ...existing,
+          deviceId,
+          ...state,
+          updatedAt: now,
+          lastSeen: state.online !== false ? now : existing.lastSeen,
+        });
       } catch {
         console.error(`[mqtt] malformed status message from ${deviceId}`);
       }
