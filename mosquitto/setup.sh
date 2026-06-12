@@ -141,11 +141,27 @@ else
     echo ""
     echo "Creating MQTT users..."
 
-    # gateway.env — read by the Node.js gateway
+    # Write gateway credentials directly into gateway/.env so the service picks them up
     GW_PASS="$(openssl rand -hex 16)"
     mosquitto_passwd -b "$SCRIPT_DIR/passwd" gateway "$GW_PASS"
-    printf "MQTT_USERNAME=gateway\nMQTT_PASSWORD=%s\n" "$GW_PASS" > "$SCRIPT_DIR/gateway.env"
-    echo "  gateway → $SCRIPT_DIR/gateway.env"
+    GATEWAY_ENV="$(dirname "$SCRIPT_DIR")/gateway/.env"
+    if [ -f "$GATEWAY_ENV" ]; then
+        # Update existing .env in place
+        sed -i "s|^MQTT_USERNAME=.*|MQTT_USERNAME=gateway|" "$GATEWAY_ENV"
+        sed -i "s|^MQTT_PASSWORD=.*|MQTT_PASSWORD=$GW_PASS|" "$GATEWAY_ENV"
+    else
+        # Bootstrap from example if available, otherwise write minimal file
+        EXAMPLE="$(dirname "$SCRIPT_DIR")/gateway/.env.example"
+        if [ -f "$EXAMPLE" ]; then
+            cp "$EXAMPLE" "$GATEWAY_ENV"
+            sed -i "s|^MQTT_USERNAME=.*|MQTT_USERNAME=gateway|" "$GATEWAY_ENV"
+            sed -i "s|^MQTT_PASSWORD=.*|MQTT_PASSWORD=$GW_PASS|" "$GATEWAY_ENV"
+        else
+            printf "MQTT_USERNAME=gateway\nMQTT_PASSWORD=%s\n" "$GW_PASS" > "$GATEWAY_ENV"
+        fi
+    fi
+    chmod 600 "$GATEWAY_ENV"
+    echo "  gateway → $GATEWAY_ENV"
 
     # devices.env — read by the ESP32 simulator (or provisioned to real firmware)
     > "$SCRIPT_DIR/devices.env"
@@ -157,7 +173,7 @@ else
         echo "  $DEVICE → $SCRIPT_DIR/devices.env"
     done
 
-    chmod 600 "$SCRIPT_DIR/gateway.env" "$SCRIPT_DIR/devices.env"
+    chmod 600 "$SCRIPT_DIR/devices.env"
 fi
 
 # ── Done ─────────────────────────────────────────────────────────────────────
@@ -170,7 +186,7 @@ echo ""
 echo " Start broker:"
 echo "   mosquitto -c $SCRIPT_DIR/mosquitto.conf"
 echo ""
-echo " Gateway credentials: $SCRIPT_DIR/gateway.env"
+echo " Gateway credentials: written to gateway/.env"
 echo " Device credentials:  $SCRIPT_DIR/devices.env"
 echo ""
 echo " CA cert to bundle with the Android app and firmware:"

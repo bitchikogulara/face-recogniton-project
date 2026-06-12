@@ -61,7 +61,6 @@ dist/
 mosquitto/certs/
 mosquitto/passwd
 mosquitto/mosquitto.conf
-mosquitto/gateway.env
 mosquitto/devices.env
 mosquitto/data/
 mosquitto/log/
