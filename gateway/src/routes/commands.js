@@ -1,3 +1,44 @@
+/**
+ * @swagger
+ * /command:
+ *   post:
+ *     summary: Send a command to a device
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [device, action]
+ *             properties:
+ *               device:
+ *                 type: string
+ *                 example: lock-01
+ *               action:
+ *                 type: string
+ *                 example: unlock
+ *               payload:
+ *                 type: object
+ *                 example: { brightness: 50 }
+ *     responses:
+ *       200:
+ *         description: Command published to broker
+ *         content:
+ *           application/json:
+ *             example: { ok: true, topic: "devices/lock-01/cmd" }
+ *       400:
+ *         description: Missing device or action
+ *       401:
+ *         description: Missing or invalid token
+ *       403:
+ *         description: Not authorised to control this device / account revoked
+ *       429:
+ *         description: Rate limit exceeded
+ *       502:
+ *         description: MQTT publish failed
+ */
 const { Router } = require('express');
 const { publish } = require('../mqtt');
 const { verifyToken } = require('../middleware/auth');
