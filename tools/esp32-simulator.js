@@ -3,7 +3,6 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const mqtt = require('mqtt');
 const fs = require('fs');
 
-// Simulated devices — mirrors what the real ESP32 firmware will do
 const DEVICES = {
   'lock-01': {
     state: { locked: true },
@@ -35,67 +34,75 @@ const DEVICES = {
 };
 
 const url = process.env.MQTT_BROKER_URL || 'mqtts://localhost:8883';
-const options = {
-  username: process.env.MQTT_USERNAME,
-  password: process.env.MQTT_PASSWORD,
-  rejectUnauthorized: true,
-  clientId: `esp32-sim-${Date.now()}`,
-};
 
-if (process.env.MQTT_CA_CERT_PATH) {
-  options.ca = fs.readFileSync(path.resolve(__dirname, process.env.MQTT_CA_CERT_PATH));
+const caPath = process.env.MQTT_CA_CERT_PATH
+  ? path.resolve(__dirname, process.env.MQTT_CA_CERT_PATH)
+  : null;
+const ca = caPath ? fs.readFileSync(caPath) : undefined;
+
+function deviceEnvKey(id) {
+  return `MQTT_PASSWORD_${id.replace(/-/g, '_').toUpperCase()}`;
 }
 
-const client = mqtt.connect(url, options);
+function startDevice(id, device) {
+  const password = process.env[deviceEnvKey(id)] || process.env.MQTT_PASSWORD;
 
-client.on('connect', () => {
-  console.log(`[sim] connected to ${url}\n`);
+  if (!password) {
+    console.error(`[${id}] no password set — set ${deviceEnvKey(id)} in .env`);
+    process.exit(1);
+  }
 
-  for (const id of Object.keys(DEVICES)) {
-    const cmdTopic = `devices/${id}/cmd`;
+  const client = mqtt.connect(url, {
+    username: id,
+    password,
+    rejectUnauthorized: true,
+    clientId: `esp32-sim-${id}-${Date.now()}`,
+    ...(ca && { ca }),
+  });
+
+  const cmdTopic    = `devices/${id}/cmd`;
+  const statusTopic = `devices/${id}/status`;
+
+  client.on('connect', () => {
+    console.log(`[${id}] connected`);
     client.subscribe(cmdTopic, { qos: 1 }, err => {
       if (err) { console.error(`[${id}] subscribe failed:`, err.message); return; }
-      console.log(`[${id}] subscribed to ${cmdTopic}`);
-      publishStatus(id);
+      publishStatus(id, device, client, statusTopic);
     });
-  }
-});
+  });
 
-client.on('message', (topic, message) => {
-  const match = topic.match(/^devices\/(.+)\/cmd$/);
-  if (!match) return;
+  client.on('message', (_topic, message) => {
+    let cmd;
+    try {
+      cmd = JSON.parse(message.toString());
+    } catch {
+      console.error(`[${id}] malformed command (not valid JSON)`);
+      return;
+    }
 
-  const id = match[1];
-  const device = DEVICES[id];
-  if (!device) { console.warn(`[sim] unknown device id: ${id}`); return; }
+    if (typeof cmd !== 'object' || cmd === null || Array.isArray(cmd)) {
+      console.error(`[${id}] malformed command (expected JSON object)`);
+      return;
+    }
 
-  let cmd;
-  try {
-    cmd = JSON.parse(message.toString());
-  } catch {
-    console.error(`[${id}] malformed command (not valid JSON)`);
-    return;
-  }
+    const { action, payload } = cmd;
+    console.log(`\n[${id}] ← cmd  action=${action}${payload ? '  payload=' + JSON.stringify(payload) : ''}`);
+    device.state = device.handle(action, payload, device.state);
+    publishStatus(id, device, client, statusTopic);
+  });
 
-  if (typeof cmd !== 'object' || cmd === null || Array.isArray(cmd)) {
-    console.error(`[${id}] malformed command (expected JSON object, got ${cmd === null ? 'null' : typeof cmd})`);
-    return;
-  }
+  client.on('error',     err => console.error(`[${id}] error:`, err.message));
+  client.on('reconnect', ()  => console.log(`[${id}] reconnecting...`));
+  client.on('close',     ()  => console.log(`[${id}] disconnected`));
+}
 
-  const { action, payload } = cmd;
-  console.log(`\n[${id}] ← cmd  action=${action}${payload ? '  payload=' + JSON.stringify(payload) : ''}`);
-
-  device.state = device.handle(action, payload, device.state);
-  publishStatus(id);
-});
-
-function publishStatus(id) {
-  const device = DEVICES[id];
+function publishStatus(id, device, client, statusTopic) {
   const msg = JSON.stringify({ ...device.status(device.state), ts: Date.now() });
-  client.publish(`devices/${id}/status`, msg, { qos: 1 });
+  client.publish(statusTopic, msg, { qos: 1 });
   console.log(`[${id}] → status ${msg}`);
 }
 
-client.on('error',     err => console.error('[sim] error:', err.message));
-client.on('reconnect', ()  => console.log('[sim] reconnecting...'));
-client.on('close',     ()  => console.log('[sim] disconnected'));
+console.log(`[sim] connecting to ${url}\n`);
+for (const [id, device] of Object.entries(DEVICES)) {
+  startDevice(id, device);
+}

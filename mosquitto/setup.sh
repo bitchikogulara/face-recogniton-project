@@ -115,11 +115,66 @@ sed \
 
 if [ ! -f "$SCRIPT_DIR/passwd" ]; then
     touch "$SCRIPT_DIR/passwd"
-    echo "Created empty passwd file."
 fi
 
 # Mosquitto refuses to load acl/passwd if world-readable
 chmod 600 "$SCRIPT_DIR/acl" "$SCRIPT_DIR/passwd"
+
+# ── Users ────────────────────────────────────────────────────────────────────
+
+USERS=("gateway" "lock-01" "lights-01")
+
+# Check if all users already exist
+ALL_EXIST=true
+for u in "${USERS[@]}"; do
+    if ! grep -q "^$u:" "$SCRIPT_DIR/passwd" 2>/dev/null; then
+        ALL_EXIST=false
+        break
+    fi
+done
+
+if [ "$ALL_EXIST" = true ]; then
+    echo ""
+    echo "MQTT users already configured — skipping."
+    echo "  To reset credentials, delete $SCRIPT_DIR/passwd and re-run setup.sh."
+else
+    echo ""
+    echo "Creating MQTT users..."
+
+    # Write gateway credentials directly into gateway/.env so the service picks them up
+    GW_PASS="$(openssl rand -hex 16)"
+    mosquitto_passwd -b "$SCRIPT_DIR/passwd" gateway "$GW_PASS"
+    GATEWAY_ENV="$(dirname "$SCRIPT_DIR")/gateway/.env"
+    if [ -f "$GATEWAY_ENV" ]; then
+        # Update existing .env in place
+        sed -i "s|^MQTT_USERNAME=.*|MQTT_USERNAME=gateway|" "$GATEWAY_ENV"
+        sed -i "s|^MQTT_PASSWORD=.*|MQTT_PASSWORD=$GW_PASS|" "$GATEWAY_ENV"
+    else
+        # Bootstrap from example if available, otherwise write minimal file
+        EXAMPLE="$(dirname "$SCRIPT_DIR")/gateway/.env.example"
+        if [ -f "$EXAMPLE" ]; then
+            cp "$EXAMPLE" "$GATEWAY_ENV"
+            sed -i "s|^MQTT_USERNAME=.*|MQTT_USERNAME=gateway|" "$GATEWAY_ENV"
+            sed -i "s|^MQTT_PASSWORD=.*|MQTT_PASSWORD=$GW_PASS|" "$GATEWAY_ENV"
+        else
+            printf "MQTT_USERNAME=gateway\nMQTT_PASSWORD=%s\n" "$GW_PASS" > "$GATEWAY_ENV"
+        fi
+    fi
+    chmod 600 "$GATEWAY_ENV"
+    echo "  gateway → $GATEWAY_ENV"
+
+    # devices.env — read by the ESP32 simulator (or provisioned to real firmware)
+    > "$SCRIPT_DIR/devices.env"
+    for DEVICE in "lock-01" "lights-01"; do
+        PASS="$(openssl rand -hex 16)"
+        mosquitto_passwd -b "$SCRIPT_DIR/passwd" "$DEVICE" "$PASS"
+        VAR="MQTT_PASSWORD_$(echo "$DEVICE" | tr '[:lower:]-' '[:upper:]_')"
+        echo "${VAR}=${PASS}" >> "$SCRIPT_DIR/devices.env"
+        echo "  $DEVICE → $SCRIPT_DIR/devices.env"
+    done
+
+    chmod 600 "$SCRIPT_DIR/devices.env"
+fi
 
 # ── Done ─────────────────────────────────────────────────────────────────────
 
@@ -131,10 +186,10 @@ echo ""
 echo " Start broker:"
 echo "   mosquitto -c $SCRIPT_DIR/mosquitto.conf"
 echo ""
-echo " Add a user (run once per user/device):"
-echo "   mosquitto_passwd -b $SCRIPT_DIR/passwd <username> <password>"
+echo " Gateway credentials: written to gateway/.env"
+echo " Device credentials:  $SCRIPT_DIR/devices.env"
 echo ""
-echo " CA cert to bundle with the Android app:"
+echo " CA cert to bundle with the Android app and firmware:"
 echo "   $CERTS_DIR/ca.crt"
 echo ""
 echo " NOTE: Server cert expires in 1 year. Re-run setup.sh to regenerate."
