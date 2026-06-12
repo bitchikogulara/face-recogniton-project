@@ -3,6 +3,7 @@ AGENT_CONTEXT.md
 
 # ── Node.js / Gateway ──────────────────────────────────────────
 node_modules/
+gateway/data/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

@@ -2,6 +2,7 @@ const { Router } = require('express');
 const { publish } = require('../mqtt');
 const { verifyToken } = require('../middleware/auth');
 const { rateLimit } = require('../middleware/rateLimit');
+const { getUser } = require('../store/identities');
 
 const router = Router();
 
@@ -10,6 +11,19 @@ router.post('/', verifyToken, rateLimit, async (req, res) => {
 
   if (!device || !action) {
     return res.status(400).json({ error: 'device and action are required' });
+  }
+
+  const userId = req.claims.sub || req.claims.userId;
+  if (userId) {
+    const user = getUser(userId);
+    if (user) {
+      if (user.deleted) {
+        return res.status(403).json({ error: 'account revoked' });
+      }
+      if (!user.devices.includes(device)) {
+        return res.status(403).json({ error: 'not authorised to control this device' });
+      }
+    }
   }
 
   const topic = `devices/${device}/cmd`;
