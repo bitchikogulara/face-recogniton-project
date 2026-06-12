@@ -1,5 +1,11 @@
 const WINDOW_MS = 60 * 1000;
-const MAX_REQUESTS = parseInt(process.env.RATE_LIMIT_MAX || '10', 10);
+
+const _parsed = parseInt(process.env.RATE_LIMIT_MAX || '10', 10);
+if (!Number.isFinite(_parsed) || _parsed <= 0) {
+  console.error(`invalid RATE_LIMIT_MAX: "${process.env.RATE_LIMIT_MAX}" — must be a positive integer`);
+  process.exit(1);
+}
+const MAX_REQUESTS = _parsed;
 
 // Map<userId, { count, windowStart }>
 const buckets = new Map();
