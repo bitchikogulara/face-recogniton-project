@@ -1,10 +1,11 @@
 const { Router } = require('express');
 const { publish } = require('../mqtt');
 const { verifyToken } = require('../middleware/auth');
+const { rateLimit } = require('../middleware/rateLimit');
 
 const router = Router();
 
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, rateLimit, async (req, res) => {
   const { device, action, payload } = req.body ?? {};
 
   if (!device || !action) {
