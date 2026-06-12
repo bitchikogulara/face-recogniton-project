@@ -44,8 +44,8 @@ function connectMqtt() {
         const now = Date.now();
         statusCache.set(deviceId, {
           ...existing,
-          deviceId,
           ...state,
+          deviceId,  // always use topic-derived id — payload cannot overwrite it
           updatedAt: now,
           lastSeen: state.online !== false ? now : existing.lastSeen,
         });
