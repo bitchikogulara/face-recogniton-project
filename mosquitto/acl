@@ -11,13 +11,13 @@ user gateway
 topic readwrite devices/#
 topic readwrite status/#
 
-# Phase 2: add per-device credentials below
-# Each device can only touch its own topics — limits blast radius if compromised.
-#
-# user lock-01
-# topic read  devices/lock-01/cmd
-# topic write devices/lock-01/status
-#
-# user lights-01
-# topic read  devices/lights-01/cmd
-# topic write devices/lights-01/status
+# Per-device credentials — each device can only touch its own topics.
+# A compromised bulb cannot send commands to the lock.
+
+user lock-01
+topic read  devices/lock-01/cmd
+topic write devices/lock-01/status
+
+user lights-01
+topic read  devices/lights-01/cmd
+topic write devices/lights-01/status
