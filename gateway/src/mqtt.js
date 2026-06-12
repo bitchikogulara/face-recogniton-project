@@ -2,6 +2,7 @@ const mqtt = require('mqtt');
 const fs = require('fs');
 
 let client;
+const statusCache = new Map();
 
 function connectMqtt() {
   return new Promise((resolve, reject) => {
@@ -25,7 +26,32 @@ function connectMqtt() {
     client.once('connect', () => {
       clearTimeout(timeout);
       console.log(`MQTT connected to ${url}`);
+
+      client.subscribe('devices/+/status', { qos: 1 }, err => {
+        if (err) console.error('failed to subscribe to status topics:', err.message);
+      });
+
       resolve();
+    });
+
+    client.on('message', (topic, message) => {
+      const match = topic.match(/^devices\/(.+)\/status$/);
+      if (!match) return;
+      const deviceId = match[1];
+      try {
+        const state = JSON.parse(message.toString());
+        const existing = statusCache.get(deviceId) ?? {};
+        const now = Date.now();
+        statusCache.set(deviceId, {
+          ...existing,
+          ...state,
+          deviceId,  // always use topic-derived id — payload cannot overwrite it
+          updatedAt: now,
+          lastSeen: state.online !== false ? now : existing.lastSeen,
+        });
+      } catch {
+        console.error(`[mqtt] malformed status message from ${deviceId}`);
+      }
     });
 
     client.on('error', err => console.error('MQTT error:', err.message));
@@ -42,4 +68,12 @@ function publish(topic, message) {
   });
 }
 
-module.exports = { connectMqtt, publish };
+function getDeviceStates() {
+  return Array.from(statusCache.values());
+}
+
+function getDeviceState(id) {
+  return statusCache.get(id) ?? null;
+}
+
+module.exports = { connectMqtt, publish, getDeviceStates, getDeviceState };

@@ -1,3 +1,86 @@
+/**
+ * @swagger
+ * /enroll:
+ *   post:
+ *     summary: Enroll or update a user (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [userId, name, devices]
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 example: user-123
+ *               name:
+ *                 type: string
+ *                 example: Bitchiko
+ *               devices:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: [lock-01, lights-01]
+ *               role:
+ *                 type: string
+ *                 enum: [user, admin]
+ *                 example: user
+ *     responses:
+ *       201:
+ *         description: User enrolled
+ *       400:
+ *         description: Missing required fields
+ *       401:
+ *         description: Missing or invalid token
+ *       403:
+ *         description: Admin access required
+ *   get:
+ *     summary: List all enrolled users (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of enrolled users
+ *       401:
+ *         description: Missing or invalid token
+ *       403:
+ *         description: Admin access required
+ *
+ * /enroll/{userId}:
+ *   get:
+ *     summary: Get a single enrolled user (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User object
+ *       404:
+ *         description: User not found
+ *   delete:
+ *     summary: Revoke a user's access (admin only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User revoked
+ *       404:
+ *         description: User not found
+ */
 const { Router } = require('express');
 const { verifyToken } = require('../middleware/auth');
 const { requireAdmin } = require('../middleware/requireAdmin');
