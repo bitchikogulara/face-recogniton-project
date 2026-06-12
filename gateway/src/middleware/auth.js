@@ -6,23 +6,30 @@ function verifyToken(req, res, next) {
     return res.status(401).json({ error: 'missing token' });
   }
 
-  const token = header.slice(7);
   const secret = process.env.JWT_SECRET;
-
   if (!secret) {
-    // Dev-only fallback: JWT_SECRET not set, skip validation
-    // TODO Phase 2: remove this branch — secret must always be present in production
-    console.warn('JWT_SECRET not set — skipping token validation (dev only)');
-    req.claims = {};
-    return next();
+    console.error('JWT_SECRET is not set — refusing all requests');
+    return res.status(500).json({ error: 'server misconfiguration' });
   }
 
+  const token = header.slice(7);
+
+  let claims;
   try {
-    req.claims = jwt.verify(token, secret, { algorithms: ['HS256'] });
-    next();
+    claims = jwt.verify(token, secret, {
+      algorithms: ['HS256'],
+      clockTolerance: 10,
+    });
   } catch {
     return res.status(401).json({ error: 'invalid or expired token' });
   }
+
+  if (!claims.iat) {
+    return res.status(401).json({ error: 'token missing iat' });
+  }
+
+  req.claims = claims;
+  next();
 }
 
 module.exports = { verifyToken };
