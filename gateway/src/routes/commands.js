@@ -16,8 +16,13 @@ router.post('/', verifyToken, rateLimit, async (req, res) => {
   const userId = req.claims.sub || req.claims.userId;
   if (userId) {
     const user = getUser(userId);
-    if (user && !user.deleted && !user.devices.includes(device)) {
-      return res.status(403).json({ error: 'not authorised to control this device' });
+    if (user) {
+      if (user.deleted) {
+        return res.status(403).json({ error: 'account revoked' });
+      }
+      if (!user.devices.includes(device)) {
+        return res.status(403).json({ error: 'not authorised to control this device' });
+      }
     }
   }
 
