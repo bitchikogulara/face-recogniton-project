@@ -1,4 +1,4 @@
-# Branching Strategy
+  # Branching Strategy
 
 FaceConnect uses a lightweight GitFlow model suited for a small team with distinct components.
 
