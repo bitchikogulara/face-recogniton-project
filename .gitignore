@@ -1,5 +1,6 @@
-# Agent context — local only, never push
+# Agent context and Claude Code config — local only, never push
 AGENT_CONTEXT.md
+.claude/
 
 # ── Node.js / Gateway ──────────────────────────────────────────
 node_modules/
