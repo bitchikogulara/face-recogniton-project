@@ -9,7 +9,8 @@ function allowedDevices(claims) {
   const userId = claims?.sub || claims?.userId;
   if (!userId) return null;
   const user = getUser(userId);
-  if (!user || user.deleted) return [];
+  if (!user) return null; // not enrolled → allow all (matches commands.js behaviour)
+  if (user.deleted) return []; // revoked → nothing
   if (user.role === 'admin') return null; // null = all devices
   return user.devices;
 }
