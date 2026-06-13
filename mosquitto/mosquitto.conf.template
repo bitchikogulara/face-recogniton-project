@@ -1,10 +1,14 @@
 # FaceConnect — Mosquitto configuration
 # Generated from mosquitto.conf.template by setup.sh — do not edit directly.
 
-# No anonymous access, no plaintext listener
+# No anonymous access
 allow_anonymous false
 
-# MQTTS on 8883 — TLS only
+# Local-only plain MQTT on 1883 — for dev tools (MQTT Explorer, mosquitto_sub)
+# Bound to 127.0.0.1 so it is not reachable from the network
+listener 1883 127.0.0.1
+
+# MQTTS on 8883 — TLS only (used by gateway, ESP32, Android)
 listener 8883
 cafile {{CERTS_DIR}}/ca.crt
 certfile {{CERTS_DIR}}/server.crt
